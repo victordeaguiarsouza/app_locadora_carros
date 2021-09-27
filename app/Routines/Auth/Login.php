@@ -31,7 +31,6 @@ class Login
             $content->data      = ['token' => $token];
             $content->message   = $e->getMessage();
             $content->errorCode = $e->getCode();
-            $content->errors    = $e->errors();
         }
 
         return response()->json($content);
