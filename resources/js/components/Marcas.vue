@@ -9,19 +9,19 @@
                          <div class="form-row">
                             <div class="col-md-6 mb-3">
                                 <input-container-component titulo="ID" id="inputId" id-help="idHelp" texto-ajuda="Opcional. Informe o Id da marca.">
-                                    <input type="number" class="form-control" id="inputId" aria-describedby="idHelp" placeholder="ID">
+                                    <input type="number" class="form-control" id="inputId" v-model="busca.id" aria-describedby="idHelp" placeholder="ID">
                                 </input-container-component>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <input-container-component titulo="Nome" id="inputNome" id-help="nomeHelp" texto-ajuda="Opcional. Informe o nome da marca.">
-                                    <input type="text" class="form-control" id="inputNome" aria-describedby="nomeHelp" placeholder="Nome">
+                                    <input type="text" class="form-control" id="inputNome" v-model="busca.nome" aria-describedby="nomeHelp" placeholder="Nome">
                                 </input-container-component>
                             </div>
                         </div>
                     </template>
 
                     <template v-slot:rodape>
-                        <button type="submit" class="btn btn-primary float-right">Pesquisar</button>
+                        <button type="submit" class="btn btn-primary float-right" @click.prevent="pesquisar()">Pesquisar</button>
                     </template>
                 </card-component>
                 <!-- fim do card de busca -->
@@ -29,11 +29,24 @@
                 <!-- inicio do card de marcas -->
                 <card-component titulo="Relação de Marcas">
                     <template v-slot:conteudo>
-                        <table-component :data="marcas"></table-component>
+                        <table-component :titulos="{
+                            id         : {titulo: 'ID'             , tipo: 'text'},
+                            nome       : {titulo: 'Nome'           , tipo: 'text'},
+                            imagem     : {titulo: 'Imagem'         , tipo: 'img'},
+                            created_at : {titulo: 'Data de Criação', tipo: 'date'},
+                        }" :data="marcas.data"></table-component>
                     </template>
 
                     <template v-slot:rodape>
-                        <button type="submit" class="btn btn-primary float-right" data-toggle="modal" data-target="#modalMarca">Adicionar</button>
+
+                       <paginate-component>
+                            <li v-for="l,key in marcas.links" :key="key" :class="l.active ? 'page-item active' : 'page-item' " @click.prevent="paginacao(l)">
+                                <a class="page-link" v-html="l.label"></a>
+                            </li>
+                       </paginate-component>
+                       
+                       <button type="submit" class="btn btn-primary float-right" data-toggle="modal" data-target="#modalMarca">Adicionar</button>
+                    
                     </template>
                 </card-component>
                 <!-- fim do card de marcas -->
@@ -75,7 +88,9 @@
 </template>
 
 <script>
+import Paginate from './Paginate.vue';
     export default {
+  components: { Paginate },
         computed: {
             token() {
                 
@@ -94,10 +109,35 @@
                 tipo: '',
                 mensagem: '',
                 erros: [],
-                marcas: [],
+                marcas: { data: [] },
+                urlBase: 'api/v1/marca',
+                busca: { 
+                    id: '',
+                    nome: '',
+                },
             }
         },
-        methods: {  
+        methods: {
+            pesquisar(){
+
+                let filtro = '';
+
+                for(let chave in this.busca){
+
+                    filtro += (filtro != '')? ';' : '';
+
+                    filtro += chave +':like:'+this.busca[chave];
+
+                }
+
+            },
+            paginacao(l){
+                
+                if(!l.url) return;
+
+                this.urlBase = l.url;
+                this.carregarLista(); 
+            },
             carregarLista(){
 
                 let config = {
@@ -107,14 +147,13 @@
                     }
                 };
 
-                axios.get('api/v1/marca',config)
+                axios.get(this.urlBase, config)
                     .then(response => {
                         this.marcas = response.data;
-                        console.log(this.marcas); 
                     })
                     .catch(erros => {
                         console.log(erros);
-                    });;
+                    });
             },
             carregarImagem(e){
                 this.arquivoImagem = e.target.files;
@@ -133,15 +172,11 @@
                 formData.append('nome', this.nomeMarca);
                 formData.append('imagem', this.arquivoImagem[0]);
 
-                axios.post('api/v1/marca', formData, config)
+                axios.post(this.urlBase, formData, config)
                      .then(response => {
-                         
                         this.transacaoStatus = true;
                         this.tipo = 'success';
                         this.mensagem = 'Registro salvo com sucesso.';
-
-                        //console.log(response);
- 
                      })
                      .catch(erros => {
                         this.transacaoStatus = true;

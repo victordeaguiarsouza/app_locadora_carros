@@ -3,16 +3,18 @@
         <table class="table table-hover">
             <thead>
                 <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">First</th>
-                    <th scope="col">Last</th>
+                    <th v-for="t,key in titulos" :key="key" scope="col">{{t.titulo}}</th>
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="d in data" :key="d.id">
-                    <th scope="row">{{d.id}}</th>
-                    <td>{{d.nome}}</td>
-                    <td><img :src="'/storage/'+d.imagem" width="30"></td>
+                <tr v-for="obj,chave in dadosFiltrados" :key="chave">
+                    <td v-for="valor,key in obj" :key="key">
+                        <span v-if="titulos[key].tipo == 'text'">{{valor}}</span>
+                        <span v-if="titulos[key].tipo == 'img'">
+                            <img :src="'/storage/'+valor">
+                        </span>
+                        <span v-if="titulos[key].tipo == 'date'">{{valor | moment("D/MM/Y")}}</span>
+                    </td>
                 </tr>
             </tbody>
         </table>
@@ -22,6 +24,25 @@
 
 <script>
     export default {
-        props: ['data']
+        props: ['data','titulos'],
+        computed: {
+            dadosFiltrados(){
+
+                let campos = Object.keys(this.titulos);
+                let dadosFiltrados = [];
+
+                this.data.map((item, chave) => {
+                    
+                    let itemFiltrado = {};
+                    
+                    campos.forEach(campo =>{
+                        itemFiltrado[campo] = item[campo]
+                    });
+
+                    dadosFiltrados.push(itemFiltrado);
+                })
+                return dadosFiltrados;
+            }
+        }
     }
 </script>
