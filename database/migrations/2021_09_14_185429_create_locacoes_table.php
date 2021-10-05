@@ -27,7 +27,7 @@ class CreateLocacoesTable extends Migration
     
             //foreign key (constraints)
             $table->foreign('cliente_id')->references('id')->on('clientes');
-            $table->foreign('carro_id')->references('id')->on('carros');
+            $table->foreign('carro_id')->references('id')->on('carros')->onDelete('cascade');
         });
     }
 

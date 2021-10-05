@@ -4,6 +4,7 @@
             <thead>
                 <tr>
                     <th v-for="t,key in titulos" :key="key" scope="col">{{t.titulo}}</th>
+                    <th v-if="visualizar.visivel || editar.visivel || remover.visivel"></th>
                 </tr>
             </thead>
             <tbody>
@@ -15,6 +16,17 @@
                         </span>
                         <span v-if="titulos[key].tipo == 'date'">{{valor | moment("D/MM/Y")}}</span>
                     </td>
+                    <td>
+                        <button v-if="visualizar.visivel" @click="setStore(obj)" class="btn btn-outline-primary btn-sm" :data-toggle="visualizar.dataToggle" :data-target="visualizar.dataTarget">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        <button v-if="editar.visivel" @click="setStore(obj)" class="btn btn-outline-success btn-sm" :data-toggle="editar.dataToggle" :data-target="editar.dataTarget">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button v-if="remover.visivel" @click="setStore(obj)" class="btn btn-outline-danger btn-sm"  :data-toggle="remover.dataToggle" :data-target="remover.dataTarget">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
                 </tr>
             </tbody>
         </table>
@@ -24,7 +36,15 @@
 
 <script>
     export default {
-        props: ['data','titulos'],
+        props: ['data','titulos','visualizar', 'editar', 'remover'],
+        methods:{
+            setStore(obj){
+                this.$store.state.transacao.status = '';
+                this.$store.state.transacao.mensagem = '';
+
+                this.$store.state.item = obj;
+            }
+        },
         computed: {
             dadosFiltrados(){
 

@@ -170,7 +170,7 @@ class MarcaController extends Controller
         }
 
         //remove o arquivo antigo
-        Storage::disk('public')->delete($marca->imagem);        
+        //Storage::disk('public')->delete($marca->imagem);        
 
         $marca->delete();
         return response()->json(['msg' => 'A marca foi removida com sucesso!'], 200);

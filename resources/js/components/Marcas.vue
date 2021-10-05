@@ -34,7 +34,13 @@
                             nome       : {titulo: 'Nome'           , tipo: 'text'},
                             imagem     : {titulo: 'Imagem'         , tipo: 'img'},
                             created_at : {titulo: 'Data de Criação', tipo: 'date'},
-                        }" :data="marcas.data"></table-component>
+                        }" 
+                        :data="marcas.data"
+                        :visualizar="{visivel: true, dataToggle: 'modal', dataTarget: '#modalMarcaVisualizar'}"
+                        :editar="{visivel: true, dataToggle: 'modal', dataTarget: '#modalMarcaEditar'}"
+                        :remover="{visivel: true, dataToggle: 'modal', dataTarget: '#modalMarcaRemover'}"
+                        >
+                        </table-component>
                     </template>
 
                     <template v-slot:rodape>
@@ -54,6 +60,7 @@
             </div>
         </div>
 
+        <!-- inicio modal de cadastro de marca -->
         <modal-component id="modalMarca" titulo="Adicionar Marcas">
 
             <template v-slot:alertas>
@@ -83,14 +90,103 @@
             </template>
 
         </modal-component>
+        <!-- fim modal de cadastro de marca -->
+
+        <!-- inicio modal de edição de marca -->
+        <modal-component id="modalMarcaEditar" titulo="Editar Marca">
+
+            <template v-slot:alertas>
+            </template>
+
+            <template v-slot:conteudo>
+
+                <div class="form-group">
+                    <div class="col-md-12 mb-3">
+                        <input-container-component titulo="ID">
+                            <input type="text" class="form-control" :value="$store.state.item.id" disabled>
+                        </input-container-component>
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <input-container-component titulo="Nome" id="editarNome" id-help="editarNomeHelp" texto-ajuda="Informe o nome da marca.">
+                            <input type="text" class="form-control" id="editarNome" aria-describedby="editarNomeHelp" placeholder="Nome" :value="$store.state.item.nome">
+                        </input-container-component>
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <input-container-component titulo="Imagem" id="editarImagem" id-help="editarImagemHelp" texto-ajuda="Insira uma imagem.">
+                            <input type="file" class="form-control-file" id="editarImagem" aria-describedby="editarImagemHelp" placeholder="Imagem" @change="carregarImagem($event)">
+                        </input-container-component>
+                    </div>
+                </div>
+
+            </template>
+
+            <template v-slot:rodape>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
+                    <button type="button" class="btn btn-primary" @click="editar()">Salvar</button>
+            </template>
+
+        </modal-component>
+        <!-- fim modal de edição de marca -->
+
+        <!-- inicio modal de visualizacao de marca -->
+        <modal-component id="modalMarcaVisualizar" titulo="Visualizar Marca">
+
+            <template v-slot:alertas></template>
+
+            <template v-slot:conteudo>
+                <input-container-component titulo="ID">
+                    <input type="text" class="form-control" :value="$store.state.item.id" disabled>
+                </input-container-component>
+                <input-container-component titulo="Nome">
+                    <input type="text" class="form-control" :value="$store.state.item.nome" disabled>
+                </input-container-component>
+                <input-container-component titulo="Data de criação">
+                    <input type="text" class="form-control" :value="$store.state.item.created_at" disabled>
+                </input-container-component>
+                <input-container-component titulo="Imagem">
+                    <img :src="'storage/'+$store.state.item.imagem" v-if="$store.state.item.imagem">
+                </input-container-component>
+            </template>
+
+            <template v-slot:rodape>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
+            </template>
+
+        </modal-component>
+        <!-- fim modal de visualizacao de marca -->
+
+         <!-- inicio modal de remoção de marca -->
+        <modal-component id="modalMarcaRemover" titulo="Remover Marca">
+
+            <template v-slot:alertas>
+                <alert-component v-if="$store.state.transacao.mensagem != ''" :tipo="tipo" :mensagem="$store.state.transacao.mensagem" ></alert-component>
+            </template>
+
+            <template v-slot:conteudo v-if="$store.state.transacao.status != 'sucesso'">
+                <input-container-component titulo="ID">
+                    <input type="text" class="form-control" :value="$store.state.item.id" disabled>
+                </input-container-component>
+                <input-container-component titulo="Nome">
+                    <input type="text" class="form-control" :value="$store.state.item.nome" disabled>
+                </input-container-component>
+            </template>
+
+            <template v-slot:rodape>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
+                    <button v-if="$store.state.transacao.status != 'sucesso'" type="button" class="btn btn-danger" @click="remover()">Remover</button>
+            </template>
+
+        </modal-component>
+        <!-- fim modal de remoção de marca -->
 
     </div>
 </template>
 
 <script>
+import InputContainer from './InputContainer.vue';
 import Paginate from './Paginate.vue';
     export default {
-  components: { Paginate },
+  components: { Paginate, InputContainer },
         computed: {
             token() {
                 
@@ -103,6 +199,9 @@ import Paginate from './Paginate.vue';
         },
         data() {
             return {
+                urlBase: 'api/v1/marca',
+                urlPaginacao: '',
+                urlFiltro: '',
                 nomeMarca: '',
                 arquivoImagem: [],
                 transacaoStatus: true,
@@ -110,7 +209,6 @@ import Paginate from './Paginate.vue';
                 mensagem: '',
                 erros: [],
                 marcas: { data: [] },
-                urlBase: 'api/v1/marca',
                 busca: { 
                     id: '',
                     nome: '',
@@ -118,27 +216,62 @@ import Paginate from './Paginate.vue';
             }
         },
         methods: {
+            editar(){
+                console.log(this.$store.state.item);
+            },
+            remover(){
+
+                let url = this.urlBase + '/'+this.$store.state.item.id;
+                let config = {
+                    headers: {
+                        'Accept'        : 'application/json',
+                        'Authorization' : this.token
+                    }
+                };
+
+                axios.delete(url, config)
+                     .then(response => {
+                        
+                        this.$store.state.transacao.status   = 'sucesso';
+                        this.$store.state.transacao.mensagem = response.data.msg;
+                        this.tipo = 'success';
+                        this.carregarLista();
+                     })
+                     .catch(erros => {
+                        this.$store.state.transacao.status   = 'erro';
+                        this.$store.state.transacao.mensagem = erros.response.data.erro;
+                        this.tipo = 'danger';
+                        console.log(erros.response.data);
+                     });
+
+            },
             pesquisar(){
 
                 let filtro = '';
+                
+                this.urlPaginacao = '';
 
                 for(let chave in this.busca){
 
-                    filtro += (filtro != '')? ';' : '';
+                    filtro += (filtro != '' && this.busca[chave] != '')? ';' : '';
 
-                    filtro += chave +':like:'+this.busca[chave];
-
+                    filtro += (this.busca[chave])? chave +':like:'+this.busca[chave] : '';
                 }
+                
+                this.urlFiltro = (filtro)? '&filtro='+filtro : '';
 
+                this.carregarLista();
             },
             paginacao(l){
                 
                 if(!l.url) return;
 
-                this.urlBase = l.url;
+                this.urlPaginacao = l.url.split('?')[1];
                 this.carregarLista(); 
             },
             carregarLista(){
+
+                let url = this.urlBase + '?' + this.urlPaginacao + this.urlFiltro
 
                 let config = {
                     headers: {
@@ -147,7 +280,7 @@ import Paginate from './Paginate.vue';
                     }
                 };
 
-                axios.get(this.urlBase, config)
+                axios.get(url, config)
                     .then(response => {
                         this.marcas = response.data;
                     })
