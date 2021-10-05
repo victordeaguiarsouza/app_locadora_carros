@@ -14,7 +14,8 @@
                         <span v-if="titulos[key].tipo == 'img'">
                             <img :src="'/storage/'+valor">
                         </span>
-                        <span v-if="titulos[key].tipo == 'date'">{{valor | moment("D/MM/Y")}}</span>
+                        <!-- <span v-if="titulos[key].tipo == 'date'">{{valor | moment("D/MM/Y")}}</span> -->
+                        <span v-if="titulos[key].tipo == 'date'">{{valor | formatarDataTempoGlobal }}</span>
                     </td>
                     <td>
                         <button v-if="visualizar.visivel" @click="setStore(obj)" class="btn btn-outline-primary btn-sm" :data-toggle="visualizar.dataToggle" :data-target="visualizar.dataTarget">
@@ -39,8 +40,9 @@
         props: ['data','titulos','visualizar', 'editar', 'remover'],
         methods:{
             setStore(obj){
-                this.$store.state.transacao.status = '';
+                this.$store.state.transacao.status   = '';
                 this.$store.state.transacao.mensagem = '';
+                this.$store.state.transacao.errors   = '';
 
                 this.$store.state.item = obj;
             }

@@ -96,6 +96,7 @@
         <modal-component id="modalMarcaEditar" titulo="Editar Marca">
 
             <template v-slot:alertas>
+                <alert-component v-if="$store.state.transacao.mensagem != ''" :tipo="tipo" :mensagem="$store.state.transacao.mensagem" ></alert-component>
             </template>
 
             <template v-slot:conteudo>
@@ -103,12 +104,12 @@
                 <div class="form-group">
                     <div class="col-md-12 mb-3">
                         <input-container-component titulo="ID">
-                            <input type="text" class="form-control" :value="$store.state.item.id" disabled>
+                            <input type="text" class="form-control" v-model="$store.state.item.id" disabled>
                         </input-container-component>
                     </div>
                     <div class="col-md-12 mb-3">
                         <input-container-component titulo="Nome" id="editarNome" id-help="editarNomeHelp" texto-ajuda="Informe o nome da marca.">
-                            <input type="text" class="form-control" id="editarNome" aria-describedby="editarNomeHelp" placeholder="Nome" :value="$store.state.item.nome">
+                            <input type="text" class="form-control" id="editarNome" aria-describedby="editarNomeHelp" placeholder="Nome" v-model="$store.state.item.nome">
                         </input-container-component>
                     </div>
                     <div class="col-md-12 mb-3">
@@ -187,16 +188,6 @@ import InputContainer from './InputContainer.vue';
 import Paginate from './Paginate.vue';
     export default {
   components: { Paginate, InputContainer },
-        computed: {
-            token() {
-                
-                let token = document.cookie.split(';').find(indice => {
-                    return indice.includes('token=');
-                });
-
-                return 'Bearer ' + token.split('=')[1];
-            }
-        },
         data() {
             return {
                 urlBase: 'api/v1/marca',
@@ -217,21 +208,46 @@ import Paginate from './Paginate.vue';
         },
         methods: {
             editar(){
-                console.log(this.$store.state.item);
+                
+                let config = {
+                    headers: {
+                        'Content-Type'  : 'multipart/form-data',
+                    }
+                };
+
+                let formData = new FormData();
+                
+                formData.append('_method', 'patch');
+                formData.append('nome', this.$store.state.item.nome);
+
+                if(this.arquivoImagem[0]){ formData.append('imagem', this.arquivoImagem[0]); }
+                
+                let url = this.urlBase + '/'+this.$store.state.item.id;
+
+                axios.post(url, formData, config)
+                     .then(response => {
+
+                        this.$store.state.transacao.status   = 'sucesso';
+                        this.$store.state.transacao.mensagem = 'Registro salvo com sucesso.';
+                        this.tipo = 'success';
+                        editarImagem.value = '';
+                        this.carregarLista();
+                     })
+                     .catch(erros => {
+                        this.$store.state.transacao.status   = 'erro';
+                        this.$store.state.transacao.mensagem = erros.response.data.erro;
+                        this.$store.state.transacao.errors   = erros.response.data.errors;
+                        this.tipo = 'danger';
+                        console.log(erros.response.data);
+                     });
             },
             remover(){
 
                 let url = this.urlBase + '/'+this.$store.state.item.id;
-                let config = {
-                    headers: {
-                        'Accept'        : 'application/json',
-                        'Authorization' : this.token
-                    }
-                };
 
-                axios.delete(url, config)
+                axios.delete(url)
                      .then(response => {
-                        
+
                         this.$store.state.transacao.status   = 'sucesso';
                         this.$store.state.transacao.mensagem = response.data.msg;
                         this.tipo = 'success';
@@ -273,14 +289,7 @@ import Paginate from './Paginate.vue';
 
                 let url = this.urlBase + '?' + this.urlPaginacao + this.urlFiltro
 
-                let config = {
-                    headers: {
-                        'Accept'        : 'application/json',
-                        'Authorization' : this.token
-                    }
-                };
-
-                axios.get(url, config)
+                axios.get(url)
                     .then(response => {
                         this.marcas = response.data;
                     })
@@ -294,11 +303,10 @@ import Paginate from './Paginate.vue';
             salvar(){
 
                 let formData = new FormData();
+
                 let config = {
                     headers: {
                         'Content-Type'  : 'multipart/form-data',
-                        'Accept'        : 'application/json',
-                        'Authorization' : this.token
                     }
                 };
 

@@ -1,3 +1,5 @@
+const { default: axios } = require('axios');
+
 window._ = require('lodash');
 
 /**
@@ -22,6 +24,52 @@ try {
 window.axios = require('axios');
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+
+//interceptar os requests
+axios.interceptors.request.use(
+    config => {
+        
+        let token = document.cookie.split(';').find(indice => {
+            return indice.includes('token=');
+        });
+
+        token = 'Bearer ' + token.split('=')[1];
+        
+        config.headers.Accept        = 'application/json';
+        config.headers.Authorization = token;
+        
+        return config;
+    },
+    error => {
+        console.log('Erro na requisição:', error);
+        return Promise.reject(error);
+    }
+);
+
+//interceptar os responses
+axios.interceptors.response.use(
+    response => {
+        return response;
+    },
+    error => {
+        console.log('Erro na resposta:', error);
+        
+        if(error.response.status == 401){
+
+            axios.post('/api/refresh')
+                     .then(response => {
+                        document.cookie = 'token='+response.data.token+';SameSite=Lax';
+
+                        window.location.reload();
+                     })
+                     .catch(erros => {
+                        console.log(erros);
+                     });
+        }
+
+        return Promise.reject(error);
+    }
+);
 
 /**
  * Echo exposes an expressive API for subscribing to channels and listening

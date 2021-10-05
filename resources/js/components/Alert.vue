@@ -1,8 +1,8 @@
 <template>
     <div :class="estilo" role="alert">
         {{mensagem}}
-        <ul v-if="erros">
-            <li v-for="e, key in erros" :key="key">
+        <ul v-if="$store.state.transacao.errors != ''">
+            <li v-for="e, key in $store.state.transacao.errors" :key="key">
                 {{e[0]}}
             </li>
         </ul>

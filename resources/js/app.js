@@ -15,8 +15,20 @@ Vue.use(Vuex);
 const store = new Vuex.Store({
     state:{
         item: {},
-        transacao: {status:'', mensagem:''}
+        transacao: {status:'', mensagem:'', errors: ''},
     }
+});
+
+Vue.filter('formatarDataTempoGlobal',function(d){
+
+    if(!d) return '-';
+
+    d = d.split('T');
+
+    let data  = d[0].split('-');
+    let tempo = d[1].split('.');
+
+    return data[2]+'/'+data[1]+'/'+data[0] + ' '+tempo[0];
 });
 
 /**
